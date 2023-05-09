@@ -5,23 +5,76 @@ using UnityEngine;
 public class PlayerMovement : MonoBehaviour
 {
     [SerializeField] private float moveSpeed = 5f;
+    [SerializeField] private float rotateSpeed = 360f;
+    [SerializeField] private float jumpHeight = 5f;
 
-    private float horizontalValue;
-    private float verticalValue;
+    private CharacterController characterController;
+    private float horizontalInput;
+    private float verticalInput;
+    private float ySpeed;
+    private float originalMoveSpeed;
 
-    void FixedUpdate()
+    private void Awake()
     {
-        //float horizontal = Input.GetAxis("Horizontal");
-        //float vertical = Input.GetAxis("Vertical");
+        this.characterController = GetComponent<CharacterController>();
+        this.originalMoveSpeed = this.moveSpeed;
+    }
 
-        //Vector3 movement = new Vector3(horizontal, 0f, vertical);
+    private void Update()
+    {
+        this.horizontalInput = Input.GetAxis("Horizontal");
+        this.verticalInput = Input.GetAxis("Vertical");
+
+        this.ySpeed += Physics.gravity.y * Time.deltaTime;
+
+        if (Input.GetButtonDown("Jump"))
+        {
+            this.ySpeed = this.jumpHeight;
+        }
+
+        if (Input.GetKeyDown(KeyCode.LeftShift))
+        {
+            this.moveSpeed += 5f;
+        }
+        if (Input.GetKeyUp(KeyCode.LeftShift))
+        {
+            this.moveSpeed = this.originalMoveSpeed;
+        }
+    }
+
+    private void FixedUpdate()
+    {
+        ///===MOVE BY RIGIDBODY===
+        //this.horizontalInput = Input.GetAxis("Horizontal");
+        //this.verticalInput = Input.GetAxis("Vertical");
+
+        //Vector3 movement = new Vector3(horizontalInput, 0f, verticalInput);
         ////movement = movement.normalized * moveSpeed;
 
-        //GetComponent<Rigidbody>().AddForce(movement * moveSpeed);
+        //GetComponent<Rigidbody>().AddForce(movement * this.moveSpeed);
 
-        this.horizontalValue = Input.GetAxis("Horizontal") * this.moveSpeed * Time.deltaTime;
-        this.verticalValue = Input.GetAxis("Vertical") * this.moveSpeed * Time.deltaTime;
+        ///===MOVE BY TRANSLATE===
+        //this.horizontalInput = Input.GetAxis("Horizontal") * this.moveSpeed * Time.deltaTime;
+        //this.verticalInput = Input.GetAxis("Vertical") * this.moveSpeed * Time.deltaTime;
 
-        transform.Translate(this.verticalValue, 0f, this.horizontalValue);
+        //transform.Translate(this.verticalInput, 0f, this.horizontalInput);
+
+
+        ///===MOVE BY CHARACTER CONTROLLER===
+        Vector3 moveDirection = new Vector3(this.horizontalInput, 0f, this.verticalInput);
+        float magnitude = Mathf.Clamp01(moveDirection.magnitude) * this.moveSpeed;
+        moveDirection.Normalize();
+
+        Vector3 velocity = moveDirection * magnitude;
+        velocity.y = ySpeed;
+
+        this.characterController.Move(velocity * Time.deltaTime);
+
+        if (moveDirection != Vector3.zero)
+        {
+            Quaternion toRotation = Quaternion.LookRotation(moveDirection, Vector3.up); //goc muon xoay
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, toRotation, this.rotateSpeed * Time.fixedDeltaTime);
+        }
+
     }
 }
