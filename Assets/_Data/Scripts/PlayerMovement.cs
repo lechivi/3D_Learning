@@ -9,14 +9,22 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float jumpHeight = 5f;
 
     private CharacterController characterController;
+    private Animator animator;
+
     private float horizontalInput;
     private float verticalInput;
     private float ySpeed;
+
+    private float originalStepOffset; //fix jump lag
     private float originalMoveSpeed;
+
 
     private void Awake()
     {
         this.characterController = GetComponent<CharacterController>();
+        this.animator = GetComponent<Animator>();
+
+        this.originalStepOffset = this.characterController.stepOffset;
         this.originalMoveSpeed = this.moveSpeed;
     }
 
@@ -27,10 +35,20 @@ public class PlayerMovement : MonoBehaviour
 
         this.ySpeed += Physics.gravity.y * Time.deltaTime;
 
-        if (Input.GetButtonDown("Jump"))
+        if (this.characterController.isGrounded)
         {
-            this.ySpeed = this.jumpHeight;
+            this.ySpeed = -0.5f;
+            this.characterController.stepOffset = this.originalStepOffset;
+            if (Input.GetButtonDown("Jump"))
+            {
+                this.ySpeed = this.jumpHeight;
+            }
         }
+        else
+        {
+            this.characterController.stepOffset = 0;
+        }
+
 
         if (Input.GetKeyDown(KeyCode.LeftShift))
         {
@@ -72,8 +90,14 @@ public class PlayerMovement : MonoBehaviour
 
         if (moveDirection != Vector3.zero)
         {
+            this.animator.SetBool("IsMoving", true);
             Quaternion toRotation = Quaternion.LookRotation(moveDirection, Vector3.up); //goc muon xoay
             transform.rotation = Quaternion.RotateTowards(transform.rotation, toRotation, this.rotateSpeed * Time.fixedDeltaTime);
+        }
+        else
+        {
+            this.animator.SetBool("IsMoving", false);
+
         }
 
     }
